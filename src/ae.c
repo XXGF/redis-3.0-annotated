@@ -557,12 +557,16 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         }
 
         // 处理文件事件，阻塞时间由 tvp 决定
+        // 1.调用 aeApiPoll 来等待接收就绪事件，已就绪事件的相关信息会放到eventLoop中。numevents 是接收到的就绪事件数量
         numevents = aeApiPoll(eventLoop, tvp);
+        // 2.遍历返回的就绪事件数组，处理事件。
         for (j = 0; j < numevents; j++) {
             // 从已就绪数组中获取事件
+            // 从已就绪数组中获取事件，eventLoop->fired[j]的数据，是在 aeApiPoll 方法里被更新的
             aeFileEvent *fe = &eventLoop->events[eventLoop->fired[j].fd];
 
             int mask = eventLoop->fired[j].mask;
+            // 取就绪事件的文件描述符，所谓文件描述符，在代码层面只是一个 int 类型的数字
             int fd = eventLoop->fired[j].fd;
             int rfired = 0;
 
@@ -573,11 +577,13 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             if (fe->mask & mask & AE_READABLE) {
                 // rfired 确保读/写事件只能执行其中一个
                 rfired = 1;
+                // 调用 回调函数 对事件进行处理
                 fe->rfileProc(eventLoop,fd,fe->clientData,mask);
             }
             // 写事件
             if (fe->mask & mask & AE_WRITABLE) {
                 if (!rfired || fe->wfileProc != fe->rfileProc)
+                    // 调用 回调函数 对事件进行处理
                     fe->wfileProc(eventLoop,fd,fe->clientData,mask);
             }
 

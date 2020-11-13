@@ -246,6 +246,8 @@ static int anetSetReuseAddr(char *err, int fd) {
  */
 static int anetCreateSocket(char *err, int domain) {
     int s;
+    // 这里的socket函数，是 操作系统内核的 socket函数，是用于创建socket套接字的
+    // 创建socket，返回的不是socket对象，而是socket套接字对应的文件描述符？
     if ((s = socket(domain, SOCK_STREAM, 0)) == -1) {
         anetSetError(err, "creating socket: %s", strerror(errno));
         return ANET_ERR;
@@ -436,12 +438,14 @@ int anetWrite(int fd, char *buf, int count)
  * 绑定并创建监听套接字
  */
 static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog) {
+    // 这里的bind函数是 操作系统内核的 bind函数，对socket绑定对应的ip和端口号
     if (bind(s,sa,len) == -1) {
         anetSetError(err, "bind: %s", strerror(errno));
         close(s);
         return ANET_ERR;
     }
-
+    // 这里的listen函数是 操作系统内核的 listen函数，让socket监听绑定的端口号的连接请求
+    // 此时，服务器进入三次握手的 listen状态
     if (listen(s, backlog) == -1) {
         anetSetError(err, "listen: %s", strerror(errno));
         close(s);

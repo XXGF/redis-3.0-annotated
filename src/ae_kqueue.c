@@ -109,9 +109,11 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
         struct timespec timeout;
         timeout.tv_sec = tvp->tv_sec;
         timeout.tv_nsec = tvp->tv_usec * 1000;
+        // 调用的是 kevent 来接收事件，就绪事件会放到state.events
         retval = kevent(state->kqfd, NULL, 0, state->events, eventLoop->setsize,
                         &timeout);
     } else {
+        // 调用的是 kevent 来接收事件，就绪事件会放到state.events
         retval = kevent(state->kqfd, NULL, 0, state->events, eventLoop->setsize,
                         NULL);
     }
@@ -136,3 +138,11 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
 static char *aeApiName(void) {
     return "kqueue";
 }
+
+// 用途：注册\反注册 监听事件，等待事件通知
+// int     kevent(int kq,                   // state->kqfd，系统内核事件队列
+//      const struct kevent *changelist,    // NULL，需要注册的事件
+// 	    int nchanges,                       // 0，changelist数组大小
+//      struct kevent *eventlist,           // state->events，内核会把返回的 就绪事件 放在这个数组
+// 	    int nevents,                        // eventLoop->setsize，eventlist数组大小
+//      const struct timespec *timeout);    // NULL，等待内核返回就绪事件的超时时间，NULL 即为无线等待
